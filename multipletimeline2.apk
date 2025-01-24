@@ -1,0 +1,765 @@
+//this code has well run in dartpad multiple timeline with advance search
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: const HomePage(),
+    );
+  }
+}
+
+// New SearchBar Widget
+class TimelineSearchBar extends StatelessWidget {
+  final TextEditingController searchController;
+  final int currentMatch;
+  final int totalMatches;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final VoidCallback onClose;
+
+  const TimelineSearchBar({
+    super.key,
+    required this.searchController,
+    required this.currentMatch,
+    required this.totalMatches,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      height: 56.0,
+      color: Theme.of(context).primaryColor.withOpacity(0.1),
+      child: Row(
+        children: [
+          Icon(Icons.search, color: Colors.grey[600]),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: searchController,
+              decoration: const InputDecoration(
+                hintText: 'Search in timeline...',
+                border: InputBorder.none,
+              ),
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+          if (searchController.text.isNotEmpty) ...[
+            Text(
+              '$currentMatch of $totalMatches',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            IconButton(
+              icon: const Icon(Icons.keyboard_arrow_up),
+              onPressed: onPrevious,
+              color: Colors.grey[600],
+            ),
+            IconButton(
+              icon: const Icon(Icons.keyboard_arrow_down),
+              onPressed: onNext,
+              color: Colors.grey[600],
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: onClose,
+              color: Colors.grey[600],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// Timeline Event Model
+class TimelineEvent {
+  final String title;
+  final String description;
+  final String descriptionPlus;
+  final String date;
+  final IconData icon;
+  final Color iconBackgroundColor;
+
+  TimelineEvent({
+    required this.title,
+    required this.description,
+    required this.descriptionPlus,
+    required this.date,
+    required this.icon,
+    required this.iconBackgroundColor,
+  });
+}
+
+final List<TimelineEvent> projectEvents = [
+  TimelineEvent(
+    title: 'Project Started',
+    description: 'Initial project planning and team formation completed',
+    descriptionPlus: '''
+• Established project goals and objectives
+• Formed core team of 5 members
+• Created initial project timeline
+• Set up project management tools
+• Conducted stakeholder interviews
+• Defined key success metrics''',
+    date: 'Jan 15, 2024',
+    icon: Icons.rocket_launch,
+    iconBackgroundColor: Colors.purple,
+  ),
+  TimelineEvent(
+    title: 'Requirements Analysis',
+    description: 'Comprehensive requirements gathering and analysis phase',
+    descriptionPlus: '''
+- Conducted user research sessions
+- Documented functional requirements
+- Mapped user journeys and workflows
+- Created system architecture diagram
+- Defined technical specifications
+- Finalized scope document''',
+    date: 'Jan 30, 2024',
+    icon: Icons.assignment_outlined,
+    iconBackgroundColor: Colors.blue,
+  ),
+  TimelineEvent(
+    title: 'Design Phase',
+    description: 'UI/UX design and prototyping phase completed',
+    descriptionPlus: '''
+- Created wireframes for all screens
+- Developed interactive prototypes
+- Established design system
+- Conducted usability testing
+- Refined user interface based on feedback
+- Finalized design specifications''',
+    date: 'Feb 15, 2024',
+    icon: Icons.brush,
+    iconBackgroundColor: Colors.green,
+  ),
+  TimelineEvent(
+    title: 'Development Sprint 1',
+    description: 'Core features implementation and basic functionality',
+    descriptionPlus: '''
+- Set up development environment
+- Implemented user authentication
+- Created database structure
+- Developed core API endpoints
+- Completed basic CRUD operations
+- Initial unit tests written''',
+    date: 'Mar 1, 2024',
+    icon: Icons.code,
+    iconBackgroundColor: Colors.orange,
+  ),
+];
+
+final List<TimelineEvent> developmentEvents = [
+  TimelineEvent(
+    title: 'Requirements Analysis',
+    description: 'Gathering and analyzing system requirements',
+    descriptionPlus: '''
+• Conducted user interviews
+• Documented functional requirements
+• Created use case diagrams
+• Analyzed technical constraints
+• Defined system architecture
+• Prepared requirement specification''',
+    date: 'Feb 1, 2024',
+    icon: Icons.assignment,
+    iconBackgroundColor: Colors.green,
+  ),
+  // Add more development events...
+];
+
+final List<TimelineEvent> researchEvents = [
+  TimelineEvent(
+    title: 'Literature Review',
+    description: 'Comprehensive review of existing research',
+    descriptionPlus: '''
+• Analyzed 50+ research papers
+• Identified research gaps
+• Summarized key findings
+• Created research framework
+• Documented methodology
+• Prepared literature review report''',
+    date: 'Mar 1, 2024',
+    icon: Icons.book,
+    iconBackgroundColor: Colors.orange,
+  ),
+  // Add more research events...
+];
+
+// HomePage Implementation
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Timeline App'),
+      ),
+      drawer: AppDrawer(),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Welcome to Timeline App',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Available Timelines:',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView(
+                children: [
+                  TimelineCard(
+                    title: 'Project Timeline',
+                    description: 'Track project milestones and progress',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TimelinePage(
+                          title: 'Project Timeline',
+                          events: projectEvents,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TimelineCard(
+                    title: 'Development Timeline',
+                    description: 'Track development phases and releases',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TimelinePage(
+                          title: 'Development Timeline',
+                          events: developmentEvents,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TimelineCard(
+                    title: 'Research Timeline',
+                    description: 'Track research progress and findings',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TimelinePage(
+                          title: 'Research Timeline',
+                          events: researchEvents,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: Text(
+                'App Developed by: Shiva Prasad Acharya',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// TimelinePage with Search Implementation
+class TimelinePage extends StatefulWidget {
+  final String title;
+  final List<TimelineEvent> events;
+
+  const TimelinePage({
+    super.key,
+    required this.title,
+    required this.events,
+  });
+
+  @override
+  State<TimelinePage> createState() => _TimelinePageState();
+}
+
+class _TimelinePageState extends State<TimelinePage> {
+  final TextEditingController _searchController = TextEditingController();
+  final List<GlobalKey> _itemKeys = [];
+  List<TimelineEvent> _filteredEvents = [];
+  List<Map<String, List<String>>> _matches = [];
+  int _currentMatchIndex = 0;
+  bool _showSearch = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredEvents = widget.events;
+    _itemKeys.addAll(List.generate(widget.events.length, (_) => GlobalKey()));
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredEvents = widget.events;
+        _matches = [];
+        _currentMatchIndex = 0;
+      } else {
+        _matches = [];
+        _filteredEvents = widget.events.where((event) {
+          final searchableText = '''
+${event.title}
+${event.description}
+${event.descriptionPlus}
+${event.date}'''
+              .toLowerCase();
+
+          if (searchableText.contains(query)) {
+            _matches.add({
+              'title': _findMatches(event.title, query),
+              'description': _findMatches(event.description, query),
+              'descriptionPlus': _findMatches(event.descriptionPlus, query),
+              'date': _findMatches(event.date, query),
+            });
+            return true;
+          }
+          return false;
+        }).toList();
+      }
+    });
+  }
+
+  List<String> _findMatches(String text, String query) {
+    final matches = <String>[];
+    final lowerText = text.toLowerCase();
+    var startIndex = 0;
+    while (true) {
+      final index = lowerText.indexOf(query, startIndex);
+      if (index == -1) break;
+      matches.add(text.substring(index, index + query.length));
+      startIndex = index + 1;
+    }
+    return matches;
+  }
+
+  void _navigateToMatch(bool next) {
+    if (_matches.isEmpty) return;
+    setState(() {
+      if (next) {
+        _currentMatchIndex = (_currentMatchIndex + 1) % getTotalMatches();
+      } else {
+        _currentMatchIndex =
+            (_currentMatchIndex - 1 + getTotalMatches()) % getTotalMatches();
+      }
+    });
+    _scrollToCurrentMatch();
+  }
+
+  void _scrollToCurrentMatch() {
+    // Implementation for scrolling to the current match
+    // Would require additional logic to determine which TimelineItem
+    // contains the current match and scroll to it
+  }
+
+  int getTotalMatches() {
+    return _matches.fold(
+        0,
+        (sum, match) =>
+            sum +
+            match['title']!.length +
+            match['description']!.length +
+            match['descriptionPlus']!.length +
+            match['date']!.length);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: Icon(_showSearch ? Icons.search_off : Icons.search),
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchController.clear();
+                }
+              });
+            },
+          ),
+        ],
+      ),
+      drawer: AppDrawer(),
+      body: Column(
+        children: [
+          if (_showSearch)
+            TimelineSearchBar(
+              searchController: _searchController,
+              currentMatch: getTotalMatches() > 0 ? _currentMatchIndex + 1 : 0,
+              totalMatches: getTotalMatches(),
+              onPrevious: () => _navigateToMatch(false),
+              onNext: () => _navigateToMatch(true),
+              onClose: () {
+                setState(() {
+                  _showSearch = false;
+                  _searchController.clear();
+                });
+              },
+            ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: _filteredEvents.length,
+              itemBuilder: (context, index) {
+                return TimelineItem(
+                  key: _itemKeys[index],
+                  event: _filteredEvents[index],
+                  isFirst: index == 0,
+                  isLast: index == _filteredEvents.length - 1,
+                  searchQuery: _searchController.text,
+                  highlightColor: Colors.yellow.withOpacity(0.3),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// TimelineItem with Search Highlighting
+class TimelineItem extends StatefulWidget {
+  final TimelineEvent event;
+  final bool isFirst;
+  final bool isLast;
+  final String searchQuery;
+  final Color highlightColor;
+
+  const TimelineItem({
+    super.key,
+    required this.event,
+    required this.isFirst,
+    required this.isLast,
+    this.searchQuery = '',
+    this.highlightColor = const Color(0xFFFFEB3B),
+  });
+
+  @override
+  State<TimelineItem> createState() => _TimelineItemState();
+}
+
+class _TimelineItemState extends State<TimelineItem> {
+  bool isExpanded = false;
+
+  Widget _highlightText(String text, String query) {
+    if (query.isEmpty) return Text(text);
+
+    final spans = <TextSpan>[];
+    final pattern = RegExp(RegExp.escape(query), caseSensitive: false);
+    final matches = pattern.allMatches(text.toLowerCase());
+
+    int currentPos = 0;
+    for (final match in matches) {
+      if (match.start > currentPos) {
+        spans.add(TextSpan(text: text.substring(currentPos, match.start)));
+      }
+      spans.add(
+        TextSpan(
+          text: text.substring(match.start, match.end),
+          style: TextStyle(backgroundColor: widget.highlightColor),
+        ),
+      );
+      currentPos = match.end;
+    }
+
+    if (currentPos < text.length) {
+      spans.add(TextSpan(text: text.substring(currentPos)));
+    }
+
+    return RichText(
+        text: TextSpan(
+            children: spans, style: const TextStyle(color: Colors.black)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 2,
+                height: 30,
+                color: widget.isFirst ? Colors.transparent : Colors.grey,
+              ),
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: widget.event.iconBackgroundColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  widget.event.icon,
+                  size: 12,
+                  color: Colors.white,
+                ),
+              ),
+              Container(
+                width: 2,
+                height: isExpanded ? 200 : 30,
+                color: widget.isLast ? Colors.transparent : Colors.grey,
+              ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Card(
+              elevation: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        isExpanded = !isExpanded;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: _highlightText(
+                                  widget.event.title,
+                                  widget.searchQuery,
+                                ),
+                              ),
+                              Icon(
+                                isExpanded
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                color: Colors.grey,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          _highlightText(
+                            widget.event.date,
+                            widget.searchQuery,
+                          ),
+                          const SizedBox(height: 8),
+                          _highlightText(
+                            widget.event.description,
+                            widget.searchQuery,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (isExpanded) ...[
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: _highlightText(
+                        widget.event.descriptionPlus,
+                        widget.searchQuery,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// TimelineCard Implementation
+class TimelineCard extends StatelessWidget {
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  const TimelineCard({
+    super.key,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// AppDrawer Implementation
+class AppDrawer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.blue,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: const [
+                Text(
+                  'Timeline App',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Developed by: Shiva Prasad Acharya',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Home'),
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.timeline),
+            title: const Text('Project Timeline'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TimelinePage(
+                    title: 'Project Timeline',
+                    events: projectEvents,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.developer_board),
+            title: const Text('Development Timeline'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TimelinePage(
+                    title: 'Development Timeline',
+                    events: developmentEvents,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.science),
+            title: const Text('Research Timeline'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TimelinePage(
+                    title: 'Research Timeline',
+                    events: researchEvents,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
