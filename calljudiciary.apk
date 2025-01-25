@@ -1,4 +1,4 @@
-//main.dart file of flutter-project idx, project name: contact
+//main.dart file of flutter-project idx, project name: contact, has filter functionality
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
